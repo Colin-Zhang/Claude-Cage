@@ -72,6 +72,12 @@ func (r *Runtime) InstallAccess(ctx context.Context) error {
 	if !inspection.State.Running {
 		return errors.New("请先启动容器")
 	}
+	// A started container can still be booting systemd. In particular, sshd's
+	// runtime directory and initial host keys are not ready until ssh.service
+	// starts. Wait before validating or reloading it during account setup.
+	if err := r.waitForSSHService(ctx, inspection.State.ContainerID); err != nil {
+		return err
+	}
 	profile, err := guestprofile.Load(r.profile)
 	if err != nil {
 		return err
@@ -139,6 +145,22 @@ cat /etc/ssh/ssh_host_ed25519_key.pub
 		return err
 	}
 	return os.WriteFile(path, []byte(line), 0600)
+}
+
+func (r *Runtime) waitForSSHService(ctx context.Context, containerID string) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	for {
+		if _, err := r.output(ctx, "exec", "--user", "0", containerID, "/bin/sh", "-c",
+			"systemctl is-active --quiet ssh.service"); err == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("容器 SSH 服务尚未就绪；原文件已保留: %w", ctx.Err())
+		case <-time.After(100 * time.Millisecond):
+		}
+	}
 }
 
 func sshConfigValue(value string) (string, error) {
