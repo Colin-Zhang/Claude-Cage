@@ -29,6 +29,19 @@
   min-height: 22px;
   padding: 3px 6px;
 }
+.desktop-expanded > .workbench-shell > .workspace-sidebar,
+.desktop-expanded > .workbench-shell > .workbench-main > .status-bar {
+  display: none;
+}
+.desktop-restore-toolbar {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+  padding: 2px 8px;
+  border-bottom: 1px solid var(--line);
+  background: var(--toolbar);
+  color: var(--toolbar-ink);
+}
 .claude-desktop-toolbar {
   display: flex;
   align-items: center;

@@ -13,6 +13,8 @@
 .client-workbench { flex:1; min-width:0; min-height:0; overflow:hidden; }
 .client-workbench > .app, .client-workbench .account-gate { height:100%; min-height:0; }
 .client-workbench .boot-screen { height:100%; }
+.client-shell:has(.app.desktop-expanded) > :is(.client-toolbar, .local-background),
+.client-shell:has(.app.desktop-expanded) > .client-stage > .ssh-sidebar { display:none; }
 .client-loading { flex:1; display:flex; align-items:center; justify-content:center; gap:12px; color:var(--muted); }
 .client-error { display:flex; align-items:center; gap:12px; justify-content:space-between; margin:12px; }
 .ssh-sidebar { width:var(--sidebar-width); flex:0 0 var(--sidebar-width); min-width:0; }
@@ -60,7 +62,7 @@
 .remote-directory-list button { justify-content: flex-start; text-align: left; overflow-wrap: anywhere; }
 
 @media(max-width:640px) {
-  .client-stage:has(.ssh-sidebar) > .client-workbench, .client-stage:has(.ssh-sidebar) > .environment-picker { display:none; }
+  .client-stage:has(.ssh-sidebar):not(:has(.app.desktop-expanded)) > .client-workbench, .client-stage:has(.ssh-sidebar) > .environment-picker { display:none; }
   .ssh-sidebar { flex:1; width:100%; max-width:none; }
   .client-toolbar, .local-background { padding:6px 10px; }
   .local-background span { display:block; margin:0; }

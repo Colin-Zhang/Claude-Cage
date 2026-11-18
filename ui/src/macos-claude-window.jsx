@@ -59,7 +59,7 @@ function matchWindowBackground(img, pane, canvasRef) {
   pane.style.backgroundColor = uniform && pixels[3] === 255 ? `rgb(${pixels[0]}, ${pixels[1]}, ${pixels[2]})` : "";
 }
 
-export function MacOSAppWindow({ browser = false, onOpenPage, visible, keyboard = "mac", remoteRef, sidebarCollapsed, onExpand, onConfirm, uploads = [], onStatus = () => {}, onFallback = () => {} }) {
+export function MacOSAppWindow({ browser = false, onOpenPage, visible, keyboard = "mac", remoteRef, sidebarCollapsed, onExpand, expanded, onToggleExpanded, onConfirm, uploads = [], onStatus = () => {}, onFallback = () => {} }) {
   const appName = browser ? "Google Chrome" : "Claude Desktop";
   const base = browser ? "/macos-browser" : "/macos/claude";
   const windowVisible = useWindowVisibility();
@@ -290,6 +290,7 @@ export function MacOSAppWindow({ browser = false, onOpenPage, visible, keyboard 
   return <section className="claude-desktop-view mac-claude" aria-label={"虚拟 Mac 中的 " + appName}>
     {(browser || !nativeAvailable()) && <BrowserUploads requests={uploads} onStatus={onStatus} />}
     <DesktopToolbar title={appName} desktop={state} platform="macOS" zoom={zoom} setZoom={setZoom} onConfirm={onConfirm}
+      expanded={expanded} onToggleExpanded={onToggleExpanded}
       onStop={browser ? undefined : () => action("stop")} refresh={() => refresh(n => n+1)} sidebarCollapsed={sidebarCollapsed} onExpand={onExpand}>
       {browser && <BrowserFavorites ready={Boolean(state?.installed)} onOpen={onOpenPage} />}
       <MacOSLogin />

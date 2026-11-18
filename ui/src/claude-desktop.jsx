@@ -4,6 +4,8 @@ import {
   Download,
   ChevronDown,
   ChevronUp,
+  Maximize2,
+  Minimize2,
   Monitor,
   PanelLeftOpen,
   Power,
@@ -33,7 +35,7 @@ export function useDesktopZoom(automatic = false) {
   return [zoom, setZoom];
 }
 
-export function DesktopToolbar({ desktop, platform, title = "Claude Desktop", zoom, setZoom, onConfirm, onStop, busy, refresh, sidebarCollapsed, onExpand, children, automatic = false }) {
+export function DesktopToolbar({ desktop, platform, title = "Claude Desktop", zoom, setZoom, onConfirm, onStop, busy, refresh, sidebarCollapsed, onExpand, expanded, onToggleExpanded, children, automatic = false }) {
   const [hidden, setHidden] = useState(() => {
     try { return localStorage.getItem("cage-desktop-toolbar-hidden") === "true"; }
     catch { return false; }
@@ -43,16 +45,13 @@ export function DesktopToolbar({ desktop, platform, title = "Claude Desktop", zo
     try { localStorage.setItem("cage-desktop-toolbar-hidden", String(value)); }
     catch { /* Keep the preference for this session. */ }
   };
-  if (hidden && desktop?.running) {
-    return (
-      <div className="desktop-toolbar-reveal">
+  const compact = hidden && desktop?.running;
+  return (
+    <header className={expanded ? "desktop-restore-toolbar" : compact ? "desktop-toolbar-reveal" : "claude-desktop-toolbar"}>
+      {!expanded && (compact ? <>
         {sidebarCollapsed && <button className="icon-button" aria-label="展开侧栏" title="展开侧栏" onClick={onExpand}><PanelLeftOpen size={15} /></button>}
         <button className="icon-button" aria-label="显示 Desktop 工具栏" title="显示 Desktop 工具栏" onClick={() => toggleToolbar(false)}><ChevronDown size={15} /></button>
-      </div>
-    );
-  }
-  return (
-      <header className="claude-desktop-toolbar">
+      </> : <>
         {sidebarCollapsed && (
           <button
             className="icon-button"
@@ -111,6 +110,19 @@ export function DesktopToolbar({ desktop, platform, title = "Claude Desktop", zo
           <RefreshCw size={15} />
         </button>
         {desktop?.running && <button className="icon-button" aria-label="隐藏 Desktop 工具栏" title="隐藏 Desktop 工具栏" onClick={() => toggleToolbar(true)}><ChevronUp size={15} /></button>}
+      </>)}
+      {onToggleExpanded && (expanded || desktop?.running) && (
+        <button
+          type="button"
+          className={compact && !expanded ? "icon-button" : "quiet-button"}
+          aria-label={expanded ? "还原 Cage 工作台" : "放大 Claude Desktop"}
+          title={expanded ? "还原侧栏和工具栏" : "在 Cage 窗口内放大 Claude Desktop"}
+          onClick={onToggleExpanded}
+        >
+          {expanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
+          {expanded ? "还原" : !compact && "放大"}
+        </button>
+      )}
       </header>
   );
 }
@@ -127,6 +139,8 @@ export function ClaudeDesktop({
   onDetails,
   onExpand,
   sidebarCollapsed,
+  expanded,
+  onToggleExpanded,
 }) {
   const [closedChooser, setClosedChooser] = useState("");
   const directoryRequest = uploads.find((item) => item.directory && item.id !== closedChooser);
@@ -225,7 +239,8 @@ export function ClaudeDesktop({
         }}
       />}
       <DesktopToolbar desktop={desktop} platform={automatic ? "Windows" : "Linux"} zoom={zoom} setZoom={setZoom} automatic={automatic}
-        onConfirm={onConfirm} onStop={() => run("stop")} busy={busy || !available} refresh={() => refresh()} sidebarCollapsed={sidebarCollapsed} onExpand={onExpand}>
+        onConfirm={onConfirm} onStop={() => run("stop")} busy={busy || !available} refresh={() => refresh()} sidebarCollapsed={sidebarCollapsed} onExpand={onExpand}
+        expanded={expanded} onToggleExpanded={onToggleExpanded}>
         {desktop?.installed && !status.guest_system?.startsWith("windows") && <button className="quiet-button" disabled={busy} onClick={async () => {
           if (!desktop.running || await onConfirm({ title: "更新 Claude Desktop？", body: "请先保存应用内的工作。更新会关闭 Claude Desktop，从官方软件源安装可用版本，再重新打开；登录资料继续保留。", confirm: "更新应用" })) run("update");
         }}>更新应用</button>}

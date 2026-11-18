@@ -75,6 +75,7 @@ function App() {
   const [managementPage, setManagementPage] = useState("");
   const [tailnetLogin, setTailnetLogin] = useState(null);
   const [desktopOpen, setDesktopOpen] = useState(false);
+  const [expandDesktop, setExpandDesktop] = useState(false);
   const [terminalChoice, setTerminalChoice] = useState(null);
   const [openingSession, setOpeningSession] = useState("");
   const [sessionOpenError, setSessionOpenError] = useState(null);
@@ -151,6 +152,12 @@ function App() {
   activeRef.current = active;
   readyRef.current = Boolean(status?.ready);
   const storageRecovery = status?.storage_recovery?.required;
+  const desktopVisible = desktopOpen && !managementPage && !storageRecovery;
+  const desktopExpanded = desktopVisible && expandDesktop;
+  useEffect(() => {
+    if (!desktopVisible) setExpandDesktop(false);
+  }, [desktopVisible]);
+  const toggleDesktopExpanded = () => setExpandDesktop(previous => !previous);
   const browserAvailable = guestCapability(status, "browser");
   const projectsAvailable = guestCapability(status, "projects");
   const editorAvailable = guestCapability(status, "editor");
@@ -1441,7 +1448,7 @@ function App() {
     );
   return (
     <SafetyChecklistContext.Provider value={() => setSafetyOpen(true)}>
-    <div className={`app ${sidebarCollapsed ? "sidebar-collapsed" : ""}`}>
+    <div className={`app${sidebarCollapsed ? " sidebar-collapsed" : ""}${desktopExpanded ? " desktop-expanded" : ""}`}>
       <div
         className="workbench-shell"
         inert={settingsOpen || undefined}
@@ -1514,14 +1521,14 @@ function App() {
         )}
         <div className="workbench-main">
           {!managementPage && showHome && terminalHeader(null)}
-          {!managementPage && status.ready && status.guest_system === "windows-remote" && !status.workload_ready && !connectionError && <div className="remote-capability-banner" role="status">
+          {!desktopExpanded && !managementPage && status.ready && status.guest_system === "windows-remote" && !status.workload_ready && !connectionError && <div className="remote-capability-banner" role="status">
             <span>{browserAvailable
               ? `Windows 云端：隔离 PowerShell 和浏览器已接通，外网${guestCapability(status, "network") ? "已开放" : "尚未开放"}；桌面和外部项目仍在适配。`
               : "Windows 云端适配中：隔离 PowerShell 已接通，浏览器、桌面和外部项目尚未接通。"}</span>
             {browserAvailable && <button disabled={!status.ready || busy} onClick={() => openBrowser()}>打开浏览器</button>}
             <button disabled={!status.ready || busy} onClick={() => createTerminal(status.workspace || "", "shell").catch(e => notify(e.message))}>打开 PowerShell</button>
           </div>}
-          {browserAvailable && browserError && running && !connectionError && <div className="connection-banner" role="status">
+          {!desktopExpanded && browserAvailable && browserError && running && !connectionError && <div className="connection-banner" role="status">
             <span>客机浏览器暂时无法连接。{browserError}</span>
             <button onClick={() => refreshStatus.current?.()}>重试</button>
           </div>}
@@ -1566,6 +1573,7 @@ function App() {
             {dropSide && <div aria-hidden="true" className={`split-drop split-${dropSide}`}>{dropSide === "left" ? "放到左侧" : "放到右侧"}</div>}
             {!storageRecovery && desktopOpen && macGuest && <MacOSAppWindow key="claude-desktop" uploads={desktopFiles.uploads} keyboard={status.keyboard} remoteRef={remote}
               onStatus={notify} onFallback={(text, message) => setTransfer({ text, message })} visible={!settingsOpen && !managementPage} onConfirm={confirm}
+              expanded={desktopExpanded} onToggleExpanded={toggleDesktopExpanded}
               sidebarCollapsed={sidebarCollapsed} onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)} />}
             {!storageRecovery && desktopOpen && !macGuest && <ClaudeDesktop
               uploads={desktopFiles.uploads}
@@ -1573,10 +1581,11 @@ function App() {
               status={status} visible={!settingsOpen && !managementPage} remoteRef={remote}
               onStatus={notify} onFallback={(text, message) => setTransfer({ text, message })}
               onConfirm={confirm} onDetails={() => setDetails(true)}
+              expanded={desktopExpanded} onToggleExpanded={toggleDesktopExpanded}
               sidebarCollapsed={sidebarCollapsed}
               onExpand={() => persist("cage-sidebar-collapsed", false, setSidebarCollapsed)}
             />}
-            {status.environment_update_required && !busy && (
+            {!desktopExpanded && status.environment_update_required && !busy && (
               <div className="environment-update-banner" role="status">
                 <span>{status.environment_update_error || "环境组件需要更新。请先保存编辑器中的文件。"}</span>
                 <button onClick={() => openSettings("project")}>查看并更新</button>
